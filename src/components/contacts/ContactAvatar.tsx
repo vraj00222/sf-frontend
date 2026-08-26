@@ -8,14 +8,29 @@ const SIZES = {
   lg: "h-14 w-14 text-lg",
 } as const;
 
-/** Initials bubble, tinted with a hue derived from the contact's email. */
+/**
+ * Contact photo as a circular avatar; falls back to the initials bubble,
+ * tinted with a hue derived from the contact's email, when there is no photo.
+ */
 export default function ContactAvatar({
   contact,
   size = "md",
 }: {
-  contact: Pick<Contact, "first_name" | "last_name" | "email">;
+  contact: Pick<Contact, "first_name" | "last_name" | "email" | "photo">;
   size?: keyof typeof SIZES;
 }) {
+  if (contact.photo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- base64 data URL; next/image adds nothing here
+      <img
+        src={contact.photo}
+        alt=""
+        aria-hidden="true"
+        className={`inline-block shrink-0 select-none rounded-full aspect-square object-cover ${SIZES[size]}`}
+      />
+    );
+  }
+
   const style = {
     "--avatar-hue": avatarHue(contact.email),
   } as CSSProperties;
