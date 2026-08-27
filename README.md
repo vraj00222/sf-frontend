@@ -6,6 +6,7 @@ page through, create, edit, and delete contacts.
 Next.js 16 (App Router) · TypeScript · Tailwind CSS · Zod · Jest + Testing Library
 + MSW · Playwright.
 <img width="1596" height="1246" alt="image" src="https://github.com/user-attachments/assets/2097690c-c56d-4044-96dd-719340eda32c" />
+<img width="1360" height="1466" alt="image" src="https://github.com/user-attachments/assets/87bd77ca-24a4-4cbd-bde4-14c1be07acb6" />
 
 ## Getting started
 
