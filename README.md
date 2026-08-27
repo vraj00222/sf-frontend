@@ -64,8 +64,12 @@ Click a row to get here. It confirms the detail read path works end to end:
 - **Header** — avatar, name, and `Job title at Company`, with **Edit**
   (`/contacts/[id]/edit`) and a destructive **Delete** that asks before it acts.
 - **Field table** — email and phone rendered as `mailto:` / `tel:` links, then
-  company, job title, address, and notes. Empty optional fields show `—` rather
-  than collapsing, so the shape of the record stays readable.
+  company, job title, addresses grouped by type (Home / Work / Other), and notes.
+  Empty optional fields show `—` rather than collapsing, so the shape of the
+  record stays readable.
+- **vCard** — downloads the contact as a `.vcf` (photo and every typed address
+  included) through `/contacts/[id]/vcard`, a route handler that proxies the API
+  so the backend URL stays server-side.
 - **Metadata table** — `ID`, `Created`, and `Last updated` in UTC, monospaced.
 
 Hand-editing the URL to an ID that does not exist gives you the styled 404 page
