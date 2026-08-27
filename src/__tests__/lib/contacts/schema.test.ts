@@ -80,7 +80,35 @@ describe("formDataToValues", () => {
     expect(extracted.first_name).toBe("Grace");
     expect(extracted.last_name).toBe("");
     expect(Object.keys(extracted).sort()).toEqual(
-      CONTACT_FIELDS.map((field) => field.name).sort(),
+      [...CONTACT_FIELDS.map((field) => field.name), "photo"].sort(),
     );
+  });
+});
+
+describe("photo validation", () => {
+  const PHOTO =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+  it("accepts an image data URL and nulls out a blank", () => {
+    expect(contactInputSchema.parse(values({ photo: PHOTO })).photo).toBe(PHOTO);
+    expect(contactInputSchema.parse(values({ photo: "" })).photo).toBeNull();
+    expect(contactInputSchema.parse(values()).photo).toBeNull();
+  });
+
+  it("rejects a non-image value", () => {
+    const result = contactInputSchema.safeParse(
+      values({ photo: "https://example.com/me.png" }),
+    );
+    expect(zodFieldErrors(result.error!)).toEqual({
+      photo: "Photo must be a PNG, JPEG, GIF, or WebP image",
+    });
+  });
+
+  it("rejects a photo over 2 MB", () => {
+    const oversized = `data:image/png;base64,${"A".repeat(3 * 1024 * 1024)}`;
+    const result = contactInputSchema.safeParse(values({ photo: oversized }));
+    expect(zodFieldErrors(result.error!)).toEqual({
+      photo: "Photo must be 2 MB or smaller",
+    });
   });
 });

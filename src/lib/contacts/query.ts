@@ -41,6 +41,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+/**
+ * A contact id out of a route param, or `null` if it isn't one. Digits only:
+ * `parseInt` would happily read "1e3" or "1-and-more" as contact 1.
+ */
+export function parseContactId(raw: string): number | null {
+  return /^\d+$/.test(raw) && Number(raw) >= 1 ? Number(raw) : null;
+}
+
 /** Parse (and sanitise) the list state out of the URL. Bad input falls back. */
 export function parseContactListQuery(
   searchParams: RawSearchParams = {},

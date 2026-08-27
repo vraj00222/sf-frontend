@@ -37,9 +37,21 @@ export async function listContacts(
   if (params.sortBy) query.set("sort_by", params.sortBy);
   if (params.order) query.set("order", params.order);
 
-  return apiJson<ContactPage>(`${CONTACTS_PATH}?${query}`, {
-    cache: "no-store",
-  });
+  const page = await apiJson<{ items: Contact[] } & Omit<ContactPage, "items">>(
+    `${CONTACTS_PATH}?${query}`,
+    { cache: "no-store" },
+  );
+
+  // Drop the photo here, at the edge: everything downstream is rendered into a
+  // payload the browser downloads, and a page of full-size photos would dwarf
+  // the rest of it. Rows get a flag and fetch the image per avatar instead.
+  return {
+    ...page,
+    items: page.items.map(({ photo, ...contact }) => ({
+      ...contact,
+      has_photo: Boolean(photo),
+    })),
+  };
 }
 
 /** Fetch one contact, or `null` when the API reports 404. */

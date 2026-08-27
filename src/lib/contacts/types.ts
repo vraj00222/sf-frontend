@@ -18,10 +18,20 @@ export interface Contact {
   postal_code: string | null;
   country: string | null;
   notes: string | null;
+  photo: string | null;
   created_at: string;
   updated_at: string;
   full_name: string;
 }
+
+/**
+ * A contact as the list renders it: everything except the photo, which is
+ * replaced by a flag. A photo is a base64 data URL of up to ~2.7 MB, and the
+ * list would otherwise ship one per row to the browser just to draw a 32px
+ * avatar. Rows point at `/contacts/[id]/photo` instead, so the bytes are
+ * fetched per visible avatar and cached by the browser.
+ */
+export type ContactListItem = Omit<Contact, "photo"> & { has_photo: boolean };
 
 /** Every editable field, i.e. `ContactCreate` / `ContactReplace`. */
 export type ContactInput = Omit<
@@ -31,7 +41,7 @@ export type ContactInput = Omit<
 
 /** `ContactPage` — one page of contacts plus the totals needed to paginate. */
 export interface ContactPage {
-  items: Contact[];
+  items: ContactListItem[];
   total: number;
   limit: number;
   offset: number;
