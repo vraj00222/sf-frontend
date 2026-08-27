@@ -52,9 +52,12 @@ function readAsDataUrl(file: File): Promise<string> {
 export default function PhotoField({
   initialPhoto,
   error,
+  onBusyChange,
 }: {
   initialPhoto: string | null;
   error?: string;
+  /** Reports whether a file is still being processed, so the form can hold submit. */
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [photo, setPhoto] = useState(initialPhoto);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -78,6 +81,7 @@ export default function PhotoField({
     }
 
     const sequence = ++readSequence.current;
+    onBusyChange?.(true);
     try {
       // GIFs pass through untouched (downscaling drops the animation).
       const dataUrl =
@@ -90,6 +94,8 @@ export default function PhotoField({
     } catch {
       if (sequence !== readSequence.current) return;
       setFileError("That file could not be read. Try another image.");
+    } finally {
+      if (sequence === readSequence.current) onBusyChange?.(false);
     }
   }
 
@@ -142,6 +148,7 @@ export default function PhotoField({
               variant="secondary"
               onClick={() => {
                 readSequence.current += 1; // invalidate any in-flight read
+                onBusyChange?.(false);
                 setPhoto(null);
                 setFileError(null);
               }}

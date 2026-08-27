@@ -1,4 +1,6 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import { useState, type CSSProperties } from "react";
 import { avatarHue, initials } from "@/lib/contacts/format";
 import type { Contact } from "@/lib/contacts/types";
 
@@ -19,13 +21,20 @@ export default function ContactAvatar({
   contact: Pick<Contact, "first_name" | "last_name" | "email" | "photo">;
   size?: keyof typeof SIZES;
 }) {
-  if (contact.photo) {
+  const [broken, setBroken] = useState(false);
+
+  if (contact.photo && !broken) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- base64 data URL; next/image adds nothing here
       <img
         src={contact.photo}
         alt=""
         aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        // A stored photo the browser cannot decode would otherwise show a broken
+        // image forever; fall through to the initials bubble instead.
+        onError={() => setBroken(true)}
         className={`inline-block shrink-0 select-none rounded-full aspect-square object-cover ${SIZES[size]}`}
       />
     );

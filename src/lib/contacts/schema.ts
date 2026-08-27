@@ -30,7 +30,11 @@ function requiredText(max: number, label: string) {
 
 /** Mirrors the API's photo rules: image data URL, at most 2 MB decoded. */
 export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
-const PHOTO_DATA_URL = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
+// The payload must be whole four-character base64 groups, optionally ending in a
+// padded group. `[A-Za-z0-9+/]+={0,2}` would accept a stray "A", which decodes to
+// nothing and would only be caught once the API rejected it.
+const PHOTO_DATA_URL =
+  /^data:image\/(png|jpeg|gif|webp);base64,(?:(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)|(?:[A-Za-z0-9+/]{4})+)$/;
 
 /** Decoded size of a base64 data URL, from the payload length. */
 export function photoByteSize(dataUrl: string): number {
