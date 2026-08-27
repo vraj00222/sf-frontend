@@ -6,18 +6,18 @@ import { parseContactId } from "@/lib/contacts/query";
  * talking to the backend directly (its URL stays server-side, like all other
  * data access in this app).
  */
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const id = parseContactId((await params).id);
   if (id === null) {
     return new Response("Contact not found", { status: 404 });
   }
 
+  const roast = new URL(request.url).searchParams.get("roast");
+  const query = roast ? "?roast=1" : "";
+
   let upstream: Response;
   try {
-    upstream = await apiFetch(`/api/v1/contacts/${id}/vcard`);
+    upstream = await apiFetch(`/api/v1/contacts/${id}/vcard${query}`);
   } catch (error) {
     if (!(error instanceof ApiUnreachableError)) throw error;
     return new Response("The contacts API is unavailable", { status: 502 });

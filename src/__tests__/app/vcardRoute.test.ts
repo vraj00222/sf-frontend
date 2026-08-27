@@ -65,4 +65,32 @@ describe("GET /contacts/[id]/vcard", () => {
 
     expect((await get("1")).status).toBe(502);
   });
+
+  it("forwards ?roast=1 to the backend when present", async () => {
+    let requestedUrl = "";
+    server.use(
+      http.get(api("/api/v1/contacts/:id/vcard"), ({ request }) => {
+        requestedUrl = request.url;
+        return new HttpResponse(VCARD, { headers: { "Content-Type": "text/vcard" } });
+      }),
+    );
+
+    await GET(new Request("http://localhost/x?roast=1"), { params: Promise.resolve({ id: "1" }) });
+
+    expect(requestedUrl).toContain("roast=1");
+  });
+
+  it("does not add a roast param when absent", async () => {
+    let requestedUrl = "";
+    server.use(
+      http.get(api("/api/v1/contacts/:id/vcard"), ({ request }) => {
+        requestedUrl = request.url;
+        return new HttpResponse(VCARD, { headers: { "Content-Type": "text/vcard" } });
+      }),
+    );
+
+    await get("1");
+
+    expect(requestedUrl).not.toContain("roast");
+  });
 });

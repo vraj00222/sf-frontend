@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, Download, Pencil } from "lucide-react";
 import ContactAvatar from "@/components/contacts/ContactAvatar";
 import DeleteContactButton from "@/components/contacts/DeleteContactButton";
+import RoastCard from "@/components/contacts/RoastCard";
 import { buttonClasses } from "@/components/ui/Button";
 import { getContact } from "@/lib/contacts/api";
 import { addressLine, formatTimestamp, jobLine } from "@/lib/contacts/format";
@@ -158,6 +159,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
           <span className="font-mono">{formatTimestamp(contact.updated_at)}</span>
         </Row>
       </dl>
+
+      <RoastCard contact={contact} />
     </div>
   );
 }
