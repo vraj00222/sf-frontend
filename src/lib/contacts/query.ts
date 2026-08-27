@@ -43,10 +43,13 @@ function clamp(value: number, min: number, max: number): number {
 
 /**
  * A contact id out of a route param, or `null` if it isn't one. Digits only:
- * `parseInt` would happily read "1e3" or "1-and-more" as contact 1.
+ * `parseInt` would happily read "1e3" or "1-and-more" as contact 1. A digit
+ * string long enough to overflow `Number` (e.g. 999…999) would otherwise pass
+ * as `Infinity`, which is `>= 1`, and end up interpolated into the upstream URL.
  */
 export function parseContactId(raw: string): number | null {
-  return /^\d+$/.test(raw) && Number(raw) >= 1 ? Number(raw) : null;
+  const id = Number(raw);
+  return /^\d+$/.test(raw) && Number.isSafeInteger(id) && id >= 1 ? id : null;
 }
 
 /** Parse (and sanitise) the list state out of the URL. Bad input falls back. */

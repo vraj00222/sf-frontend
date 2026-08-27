@@ -12,7 +12,14 @@ import type { Contact } from "@/lib/contacts/types";
  * see it.
  */
 export default async function RoastCard({ contact }: { contact: Pick<Contact, "id" | "full_name"> }) {
-  const vcard = await getRoastVcard(contact.id);
+  // The roast is a bonus, not the page: a backend 500/timeout on this optional
+  // fetch must not take down a detail page whose main content already loaded.
+  let vcard: string | null;
+  try {
+    vcard = await getRoastVcard(contact.id);
+  } catch {
+    return null;
+  }
   if (!vcard) return null;
 
   let qrDataUrl: string;
