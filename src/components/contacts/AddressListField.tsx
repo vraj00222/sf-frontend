@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { MapPin, Plus, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CONTROL } from "@/components/ui/Field";
@@ -45,6 +46,11 @@ export default function AddressListField({
   initial: AddressFormValues[];
   fieldErrors?: Record<string, string>;
 }) {
+  // Returned errors are positional (`addresses.<i>.<field>`) and are matched to
+  // entries by index. Adding or removing while a submit is in flight would shift
+  // the list out from under them, landing an error on the wrong address, so list
+  // mutation is locked until the response arrives.
+  const { pending } = useFormStatus();
   const nextKey = useRef(initial.length);
   const [entries, setEntries] = useState<Entry[]>(
     initial.map((values, key) => ({ key, values })),
@@ -78,7 +84,11 @@ export default function AddressListField({
     setEntries((current) =>
       current.map((entry) =>
         entry.key === key
-          ? { ...entry, values: { ...entry.values, [field]: value } }
+          ? // Drop the whole entry's errors, not just this field's. Some are
+            // cross-field ("fill in at least one address field") and are
+            // attached to a single input, so editing any field in the entry can
+            // make them obsolete. They come back on the next failed submit.
+            { ...entry, values: { ...entry.values, [field]: value }, errors: undefined }
           : entry,
       ),
     );
@@ -129,6 +139,7 @@ export default function AddressListField({
                 variant="ghost"
                 size="sm"
                 onClick={() => removeEntry(entry.key)}
+                disabled={pending}
                 aria-label={`Remove address ${index + 1}`}
               >
                 <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
@@ -183,7 +194,7 @@ export default function AddressListField({
         variant="secondary"
         size="sm"
         onClick={addEntry}
-        disabled={entries.length >= MAX_ADDRESSES}
+        disabled={pending || entries.length >= MAX_ADDRESSES}
       >
         <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
         Add address

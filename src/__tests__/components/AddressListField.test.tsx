@@ -57,4 +57,31 @@ describe("AddressListField", () => {
     expect(cities[1]).toHaveValue("Tahoe");
     expect(cities[1]).not.toHaveAttribute("aria-invalid");
   });
+
+  it("clears an entry's errors once the user edits any of its fields", async () => {
+    // The message is cross-field ("at least one address field"), so filling in
+    // any field in that entry can make it obsolete — it must not linger.
+    function Harness() {
+      const [errors, setErrors] = useState<Record<string, string>>();
+      return (
+        <>
+          <button onClick={() => setErrors({ "addresses.0.street": "Fill in at least one address field" })}>
+            fail submit
+          </button>
+          <AddressListField initial={[entry()]} fieldErrors={errors} />
+        </>
+      );
+    }
+    render(<Harness />);
+
+    await userEvent.click(screen.getByText("fail submit"));
+    const city = screen.getByLabelText("City");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByLabelText("Street address")).toHaveAttribute("aria-invalid", "true");
+
+    await userEvent.type(city, "Oakland");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Street address")).not.toHaveAttribute("aria-invalid");
+  });
 });
