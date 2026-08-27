@@ -8,14 +8,13 @@ import DeleteContactButton from "@/components/contacts/DeleteContactButton";
 import { buttonClasses } from "@/components/ui/Button";
 import { getContact } from "@/lib/contacts/api";
 import { addressLine, formatTimestamp, jobLine } from "@/lib/contacts/format";
+import { parseContactId } from "@/lib/contacts/query";
 import { ADDRESS_TYPES } from "@/lib/contacts/types";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 function parseId(raw: string): number {
-  const id = Number.parseInt(raw, 10);
-  if (!Number.isInteger(id) || id < 1) notFound();
-  return id;
+  return parseContactId(raw) ?? notFound();
 }
 
 export async function generateMetadata({

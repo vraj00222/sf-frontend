@@ -1,4 +1,5 @@
-import { apiFetch } from "@/lib/apiClient";
+import { ApiUnreachableError, apiFetch } from "@/lib/apiClient";
+import { parseContactId } from "@/lib/contacts/query";
 
 /**
  * Proxy the API's vCard export so the browser can download it without ever
@@ -9,14 +10,22 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const id = Number.parseInt((await params).id, 10);
-  if (!Number.isInteger(id) || id < 1) {
-    return new Response("Not found", { status: 404 });
+  const id = parseContactId((await params).id);
+  if (id === null) {
+    return new Response("Contact not found", { status: 404 });
   }
 
-  const upstream = await apiFetch(`/api/v1/contacts/${id}/vcard`);
+  let upstream: Response;
+  try {
+    upstream = await apiFetch(`/api/v1/contacts/${id}/vcard`);
+  } catch (error) {
+    if (!(error instanceof ApiUnreachableError)) throw error;
+    return new Response("The contacts API is unavailable", { status: 502 });
+  }
+
   if (!upstream.ok) {
-    return new Response("Not found", { status: upstream.status });
+    const reason = upstream.status === 404 ? "Contact not found" : "Export failed";
+    return new Response(reason, { status: upstream.status });
   }
 
   return new Response(upstream.body, {
