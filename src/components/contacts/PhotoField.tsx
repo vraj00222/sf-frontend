@@ -7,8 +7,12 @@ import { MAX_PHOTO_BYTES } from "@/lib/contacts/schema";
 
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
 
-/** Avatars render at 80px and below, so anything past this is wasted bytes. */
-const MAX_DIMENSION = 512;
+/**
+ * Avatars render at 80px and below, so 256 still covers a 2x display and keeps
+ * the stored data URL in the tens of kilobytes — the list page embeds one per
+ * row, so every byte here is multiplied by the page size.
+ */
+const MAX_DIMENSION = 256;
 
 /**
  * Downscale the image to a 512px-max avatar before it becomes base64, so the
