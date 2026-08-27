@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { apiBaseUrl } from "@/lib/apiClient";
-import type { Contact, ContactPage } from "@/lib/contacts/types";
+import type { Contact, ContactListItem } from "@/lib/contacts/types";
 
 /** Prefix a path with the configured API base so handlers match apiClient URLs. */
 export function api(path: string): string {
@@ -33,8 +33,15 @@ export function makeContact(overrides: Partial<Contact> = {}): Contact {
   };
 }
 
-export function makePage(items: Contact[], total = items.length): ContactPage {
+/** The raw API page shape: the client strips `photo` in `listContacts`. */
+export function makePage(items: Contact[], total = items.length) {
   return { items, total, limit: 25, offset: 0 };
+}
+
+/** A contact as the list renders it, after `listContacts` has stripped the photo. */
+export function makeListItem(overrides: Partial<Contact> = {}): ContactListItem {
+  const { photo, ...contact } = makeContact(overrides);
+  return { ...contact, has_photo: Boolean(photo) };
 }
 
 export const CONTACTS: Contact[] = [
@@ -49,6 +56,12 @@ export const CONTACTS: Contact[] = [
     full_name: "Grace Hopper",
   }),
 ];
+
+/** `CONTACTS` as the list receives them, with the photo stripped. */
+export const LIST_CONTACTS: ContactListItem[] = CONTACTS.map(({ photo, ...contact }) => ({
+  ...contact,
+  has_photo: Boolean(photo),
+}));
 
 export const handlers = [
   http.get(api("/health"), () =>

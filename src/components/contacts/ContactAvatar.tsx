@@ -18,16 +18,22 @@ export default function ContactAvatar({
   contact,
   size = "md",
 }: {
-  contact: Pick<Contact, "first_name" | "last_name" | "email" | "photo">;
+  contact: Pick<Contact, "id" | "first_name" | "last_name" | "email"> & {
+    /** The inline data URL, when the caller already has it (detail, preview). */
+    photo?: string | null;
+    /** Set by the list, which fetches the image from the photo route instead. */
+    has_photo?: boolean;
+  };
   size?: keyof typeof SIZES;
 }) {
   const [broken, setBroken] = useState(false);
+  const src = contact.photo ?? (contact.has_photo ? `/contacts/${contact.id}/photo` : null);
 
-  if (contact.photo && !broken) {
+  if (src && !broken) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- base64 data URL; next/image adds nothing here
+      // eslint-disable-next-line @next/next/no-img-element -- data URL or our own route; next/image adds nothing here
       <img
-        src={contact.photo}
+        src={src}
         alt=""
         aria-hidden="true"
         loading="lazy"
