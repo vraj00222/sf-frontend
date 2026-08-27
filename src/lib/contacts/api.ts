@@ -66,6 +66,21 @@ export async function getContact(id: number): Promise<Contact | null> {
   }
 }
 
+/** The roast vCard's raw text (for QR encoding), or `null` on a 404. */
+export async function getRoastVcard(id: number): Promise<string | null> {
+  try {
+    const res = await apiFetch(`${CONTACTS_PATH}/${id}/vcard?roast=1`, { cache: "no-store" });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new ApiError(res.status, await res.text().catch(() => ""));
+    }
+    return await res.text();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 export async function createContact(input: ContactInput): Promise<Contact> {
   return apiJson<Contact>(CONTACTS_PATH, {
     method: "POST",

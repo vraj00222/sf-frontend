@@ -2,20 +2,20 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft, Download, Pencil } from "lucide-react";
 import ContactAvatar from "@/components/contacts/ContactAvatar";
 import DeleteContactButton from "@/components/contacts/DeleteContactButton";
+import RoastCard from "@/components/contacts/RoastCard";
 import { buttonClasses } from "@/components/ui/Button";
 import { getContact } from "@/lib/contacts/api";
 import { addressLine, formatTimestamp, jobLine } from "@/lib/contacts/format";
+import { parseContactId } from "@/lib/contacts/query";
 import { ADDRESS_TYPES } from "@/lib/contacts/types";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 function parseId(raw: string): number {
-  const id = Number.parseInt(raw, 10);
-  if (!Number.isInteger(id) || id < 1) notFound();
-  return id;
+  return parseContactId(raw) ?? notFound();
 }
 
 export async function generateMetadata({
@@ -81,6 +81,14 @@ export default async function ContactDetailPage({ params }: PageProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <a
+            href={`/contacts/${contact.id}/vcard`}
+            className={buttonClasses("secondary")}
+            title="Download as a vCard (.vcf) with photo and addresses"
+          >
+            <Download className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+            vCard
+          </a>
           <Link
             href={`/contacts/${contact.id}/edit`}
             className={buttonClasses("secondary")}
@@ -151,6 +159,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
           <span className="font-mono">{formatTimestamp(contact.updated_at)}</span>
         </Row>
       </dl>
+
+      <RoastCard contact={contact} />
     </div>
   );
 }

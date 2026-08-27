@@ -5,13 +5,12 @@ import { ChevronLeft } from "lucide-react";
 import ContactForm from "@/components/contacts/ContactForm";
 import { saveContactAction } from "@/app/contacts/actions";
 import { getContact } from "@/lib/contacts/api";
+import { parseContactId } from "@/lib/contacts/query";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 function parseId(raw: string): number {
-  const id = Number.parseInt(raw, 10);
-  if (!Number.isInteger(id) || id < 1) notFound();
-  return id;
+  return parseContactId(raw) ?? notFound();
 }
 
 export async function generateMetadata({
