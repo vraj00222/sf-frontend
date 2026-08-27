@@ -52,6 +52,18 @@ export default async function RoastCard({ contact }: { contact: Pick<Contact, "i
           Scan → Add Contact → open Notes.
           <br />
           Same number, same roast, every time — it&rsquo;s deterministic, not broken.
+          <br />
+          <a
+            href={`/contacts/${contact.id}/vcard?roast=1`}
+            className="text-primary hover:underline"
+          >
+            Notes not showing up? Download the .vcf instead
+          </a>
+          <span className="text-muted-foreground/70">
+            {" "}
+            — some phones&rsquo; camera-scan preview skips Notes; opening the file
+            imports every field.
+          </span>
         </p>
       </div>
     </div>
