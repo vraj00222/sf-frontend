@@ -4,25 +4,39 @@ import { useRef, useState } from "react";
 import { MapPin, Plus, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CONTROL } from "@/components/ui/Field";
-import { ADDRESS_FIELDS, MAX_ADDRESSES } from "@/lib/contacts/schema";
+import { ADDRESS_FIELDS, EMPTY_ADDRESS, MAX_ADDRESSES } from "@/lib/contacts/schema";
 import { ADDRESS_TYPES, type AddressFormValues } from "@/lib/contacts/types";
 
-type Entry = { key: number; values: AddressFormValues };
-
-const BLANK: AddressFormValues = {
-  type: "Home",
-  street: "",
-  city: "",
-  state: "",
-  postal_code: "",
-  country: "",
+type Entry = {
+  key: number;
+  values: AddressFormValues;
+  /** Errors from the last failed submit, captured while positions still match. */
+  errors?: Record<string, string>;
 };
+
+const BLANK: AddressFormValues = { ...EMPTY_ADDRESS, type: "Home" };
+
+/** The `addresses.<i>.<field>` errors for one entry, keyed by field name. */
+function errorsForIndex(
+  fieldErrors: Record<string, string> | undefined,
+  index: number,
+): Record<string, string> | undefined {
+  if (!fieldErrors) return undefined;
+  const prefix = `addresses.${index}.`;
+  const entries = Object.entries(fieldErrors)
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([key, message]) => [key.slice(prefix.length), message]);
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
 
 /**
  * Editable list of address entries. Each entry posts as indexed inputs
  * (`addresses.<n>.<field>`) that `formDataToValues` reassembles, so the form
- * still submits as plain form data. Entries keep a stable React key so removal
- * in the middle doesn't shuffle the values typed into the ones below.
+ * still submits as plain form data. Inputs are controlled: React 19 resets a
+ * form's uncontrolled inputs after every action, which would silently discard
+ * the user's edits on a failed submit. Submit errors are captured onto their
+ * entries while indexes still line up, so removing an entry afterwards keeps
+ * each error on the address it belongs to.
  */
 export default function AddressListField({
   initial,
@@ -36,6 +50,19 @@ export default function AddressListField({
     initial.map((values, key) => ({ key, values })),
   );
 
+  // New submit outcome → re-attach errors positionally (positions at submit
+  // time are these positions, since submitting re-indexes the live entries).
+  const [seenErrors, setSeenErrors] = useState(fieldErrors);
+  if (fieldErrors !== seenErrors) {
+    setSeenErrors(fieldErrors);
+    setEntries((current) =>
+      current.map((entry, index) => ({
+        ...entry,
+        errors: errorsForIndex(fieldErrors, index),
+      })),
+    );
+  }
+
   function addEntry() {
     setEntries((current) => [
       ...current,
@@ -45,6 +72,16 @@ export default function AddressListField({
 
   function removeEntry(key: number) {
     setEntries((current) => current.filter((entry) => entry.key !== key));
+  }
+
+  function setValue(key: number, field: keyof AddressFormValues, value: string) {
+    setEntries((current) =>
+      current.map((entry) =>
+        entry.key === key
+          ? { ...entry, values: { ...entry.values, [field]: value } }
+          : entry,
+      ),
+    );
   }
 
   return (
@@ -58,7 +95,7 @@ export default function AddressListField({
 
       {entries.map((entry, index) => {
         const typeId = `address-${entry.key}-type`;
-        const typeError = fieldErrors?.[`addresses.${index}.type`];
+        const typeError = entry.errors?.type;
 
         return (
           <div
@@ -76,7 +113,8 @@ export default function AddressListField({
                 <select
                   id={typeId}
                   name={`addresses.${index}.type`}
-                  defaultValue={entry.values.type || "Home"}
+                  value={entry.values.type}
+                  onChange={(event) => setValue(entry.key, "type", event.target.value)}
                   className={`${CONTROL} ${typeError ? "border-destructive" : "border-border focus:border-primary"}`}
                 >
                   {ADDRESS_TYPES.map((type) => (
@@ -102,7 +140,7 @@ export default function AddressListField({
               {ADDRESS_FIELDS.map((field) => {
                 const id = `address-${entry.key}-${field.name}`;
                 const errorId = `${id}-error`;
-                const error = fieldErrors?.[`addresses.${index}.${field.name}`];
+                const error = entry.errors?.[field.name];
 
                 return (
                   <div key={field.name} className={field.wide ? "sm:col-span-2" : undefined}>
@@ -116,7 +154,10 @@ export default function AddressListField({
                       id={id}
                       type="text"
                       name={`addresses.${index}.${field.name}`}
-                      defaultValue={entry.values[field.name]}
+                      value={entry.values[field.name]}
+                      onChange={(event) =>
+                        setValue(entry.key, field.name, event.target.value)
+                      }
                       maxLength={field.maxLength}
                       placeholder={field.placeholder}
                       autoComplete={field.autoComplete}

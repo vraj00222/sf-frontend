@@ -275,7 +275,7 @@ export const ADDRESS_FIELDS: {
   },
 ];
 
-const EMPTY_ADDRESS: AddressFormValues = {
+export const EMPTY_ADDRESS: AddressFormValues = {
   type: "",
   street: "",
   city: "",
@@ -284,7 +284,9 @@ const EMPTY_ADDRESS: AddressFormValues = {
   country: "",
 };
 
-const ADDRESS_ENTRY_KEY = /^addresses\.(\d+)\.(type|street|city|state|postal_code|country)$/;
+// The field-name allow-list is `EMPTY_ADDRESS`'s keys, so adding a field there
+// is enough — the regex doesn't need to repeat the names.
+const ADDRESS_ENTRY_KEY = /^addresses\.(\d+)\.(\w+)$/;
 
 /**
  * Pull the contact fields out of a submitted form, as raw strings.
@@ -297,7 +299,7 @@ export function formDataToValues(formData: FormData): ContactFormSnapshot {
   const byIndex = new Map<number, AddressFormValues>();
   for (const [key, value] of formData.entries()) {
     const match = ADDRESS_ENTRY_KEY.exec(key);
-    if (!match) continue;
+    if (!match || !(match[2] in EMPTY_ADDRESS)) continue;
     const index = Number(match[1]);
     const entry = byIndex.get(index) ?? { ...EMPTY_ADDRESS };
     entry[match[2] as keyof AddressFormValues] = String(value);

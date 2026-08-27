@@ -44,11 +44,18 @@ export default async function ContactDetailPage({ params }: PageProps) {
   if (!contact) notFound();
 
   const subtitle = jobLine(contact);
-  // Group the addresses by type, in Home / Work / Other order.
-  const addressGroups = ADDRESS_TYPES.map((type) => ({
-    type,
-    addresses: contact.addresses.filter((address) => address.type === type),
-  })).filter((group) => group.addresses.length > 0);
+  // Group the addresses by type, Home / Work / Other first; a type this UI
+  // doesn't know yet still gets its own group instead of being dropped.
+  const typeOrder = (type: string) => {
+    const index = (ADDRESS_TYPES as readonly string[]).indexOf(type);
+    return index === -1 ? ADDRESS_TYPES.length : index;
+  };
+  const addressGroups = [...new Set(contact.addresses.map((a) => a.type))]
+    .sort((a, b) => typeOrder(a) - typeOrder(b))
+    .map((type) => ({
+      type,
+      addresses: contact.addresses.filter((address) => address.type === type),
+    }));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -116,9 +123,10 @@ export default async function ContactDetailPage({ params }: PageProps) {
                     {group.type}
                   </span>
                   <ul className="space-y-0.5">
-                    {group.addresses.map((address) => (
-                      <li key={address.id}>{addressLine(address)}</li>
-                    ))}
+                    {group.addresses.map((address) => {
+                      const line = addressLine(address);
+                      return line ? <li key={address.id}>{line}</li> : null;
+                    })}
                   </ul>
                 </div>
               ))}
