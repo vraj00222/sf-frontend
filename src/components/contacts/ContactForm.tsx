@@ -1,17 +1,22 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Field from "@/components/ui/Field";
 import Button, { buttonClasses } from "@/components/ui/Button";
+import AddressListField from "@/components/contacts/AddressListField";
 import PhotoField from "@/components/contacts/PhotoField";
-import { CONTACT_FIELD_GROUPS } from "@/lib/contacts/schema";
+import {
+  CONTACT_FIELD_GROUPS,
+  type ContactFieldGroup,
+  type ScalarFieldName,
+} from "@/lib/contacts/schema";
 import {
   EMPTY_FORM_STATE,
+  type AddressFormValues,
   type Contact,
-  type ContactInput,
   type FormState,
 } from "@/lib/contacts/types";
 
@@ -36,10 +41,37 @@ function SubmitButton({ label, busy }: { label: string; busy?: boolean }) {
   );
 }
 
+/** One titled form section: hidden legend, visible header, then the controls. */
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <fieldset className="space-y-4">
+      <legend className="sr-only">{title}</legend>
+
+      <div className="border-b border-hairline pb-2">
+        <h2 className="font-display text-sm font-semibold text-foreground">
+          {title}
+        </h2>
+        <p className="text-[13px] text-muted-foreground">{description}</p>
+      </div>
+
+      {children}
+    </fieldset>
+  );
+}
+
 /**
- * Create/edit form. The field list comes from `CONTACT_FIELD_GROUPS`, and the
- * action is a bound server action — so a submit is a plain POST that works
- * before hydration and reports errors through `useActionState`.
+ * Create/edit form. Scalar fields come from `CONTACT_FIELD_GROUPS`, and the
+ * action is a bound server action, so scalar submits still work before
+ * hydration; the photo picker and the address list are client widgets that
+ * feed the same plain form data. Errors come back through `useActionState`.
  */
 export default function ContactForm({
   action,
@@ -55,9 +87,44 @@ export default function ContactForm({
   const [state, formAction] = useActionState(action, EMPTY_FORM_STATE);
   const [photoBusy, setPhotoBusy] = useState(false);
 
-  function valueFor(name: keyof ContactInput): string {
+  function valueFor(name: ScalarFieldName): string {
     return state.values?.[name] ?? contact?.[name] ?? "";
   }
+
+  function fieldGroup(group: ContactFieldGroup) {
+    return (
+      <Section key={group.title} title={group.title} description={group.description}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {group.fields.map((field) => (
+            <Field
+              key={field.name}
+              field={field}
+              defaultValue={valueFor(field.name)}
+              error={state.fieldErrors?.[field.name]}
+            />
+          ))}
+        </div>
+      </Section>
+    );
+  }
+
+  const initialAddresses: AddressFormValues[] =
+    state.values?.addresses ??
+    contact?.addresses.map((address) => ({
+      type: address.type,
+      street: address.street ?? "",
+      city: address.city ?? "",
+      state: address.state ?? "",
+      postal_code: address.postal_code ?? "",
+      country: address.country ?? "",
+    })) ??
+    [];
+
+  // Addresses sit before the Notes group when there is one; the editor renders
+  // regardless, so a renamed or reordered group can never drop it (and with it,
+  // on the next full-replace save, the contact's stored addresses).
+  const notesGroup = CONTACT_FIELD_GROUPS.find((group) => group.title === "Notes");
+  const mainGroups = CONTACT_FIELD_GROUPS.filter((group) => group !== notesGroup);
 
   return (
     <form action={formAction} noValidate className="space-y-8">
@@ -75,50 +142,30 @@ export default function ContactForm({
         </div>
       ) : null}
 
-      <fieldset className="space-y-4">
-        <legend className="sr-only">Photo</legend>
-
-        <div className="border-b border-hairline pb-2">
-          <h2 className="font-display text-sm font-semibold text-foreground">
-            Photo
-          </h2>
-          <p className="text-[13px] text-muted-foreground">
-            Optional profile picture, shown as a circular avatar.
-          </p>
-        </div>
-
+      <Section
+        title="Photo"
+        description="Optional profile picture, shown as a circular avatar."
+      >
         <PhotoField
           initialPhoto={state.values?.photo ?? contact?.photo ?? null}
           error={state.fieldErrors?.photo}
           onBusyChange={setPhotoBusy}
         />
-      </fieldset>
+      </Section>
 
-      {CONTACT_FIELD_GROUPS.map((group) => (
-        <fieldset key={group.title} className="space-y-4">
-          <legend className="sr-only">{group.title}</legend>
+      {mainGroups.map(fieldGroup)}
 
-          <div className="border-b border-hairline pb-2">
-            <h2 className="font-display text-sm font-semibold text-foreground">
-              {group.title}
-            </h2>
-            <p className="text-[13px] text-muted-foreground">
-              {group.description}
-            </p>
-          </div>
+      <Section
+        title="Addresses"
+        description="As many as needed, each marked Home, Work, or Other."
+      >
+        <AddressListField
+          initial={initialAddresses}
+          fieldErrors={state.fieldErrors}
+        />
+      </Section>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {group.fields.map((field) => (
-              <Field
-                key={field.name}
-                field={field}
-                defaultValue={valueFor(field.name)}
-                error={state.fieldErrors?.[field.name]}
-              />
-            ))}
-          </div>
-        </fieldset>
-      ))}
+      {notesGroup ? fieldGroup(notesGroup) : null}
 
       <div className="flex items-center gap-2 border-t border-hairline pt-4">
         <SubmitButton label={submitLabel} busy={photoBusy} />
